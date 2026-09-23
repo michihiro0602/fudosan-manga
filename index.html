@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ポジトークなし！漫画でわかる不動産投資 どれが儲かるの？</title>
+<meta name="description" content="同じ本棚で、同じ不動産の話をしているのに、すすめるものは違う。その違いを三人と歩く、全99ページの漫画。">
+<meta property="og:title" content="ポジトークなし！漫画でわかる不動産投資 どれが儲かるの？">
+<meta property="og:description" content="同じ本棚で、同じ不動産の話をしているのに、すすめるものは違う。その違いを三人と歩く、全99ページの漫画。">
+<meta property="og:image" content="pages/001.webp">
+<meta property="og:type" content="book">
+<style>
+:root{--bg:#1b1b1b;--fg:#eee;--sub:#999;--bar:rgba(0,0,0,.72)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:row-reverse;gap:0;touch-action:pan-y pinch-zoom}
+#stage img{max-height:100%;max-width:100%;object-fit:contain;display:block;background:#fff}
+#stage.spread img{max-width:50%}
+#stage.spread img:first-child{object-position:left center}
+.zone{position:fixed;top:0;bottom:0;width:30%;z-index:2;cursor:pointer}
+#zl{left:0}#zr{right:0}
+#zc{position:fixed;top:0;bottom:0;left:30%;right:30%;z-index:2}
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:3;background:var(--bar);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:12px;align-items:center;transition:opacity .2s}
+#bar.hide{opacity:0;pointer-events:none}
+#bar input{flex:1;direction:rtl;accent-color:#f0b429}
+#bar button,#bar a{background:none;border:1px solid #666;color:var(--fg);border-radius:6px;padding:6px 10px;font-size:13px;text-decoration:none;white-space:nowrap;cursor:pointer}
+#num{font-size:13px;color:var(--sub);min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#hint{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:3;background:var(--bar);padding:8px 14px;border-radius:20px;font-size:13px;transition:opacity .6s}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="zone" id="zl" aria-label="次のページ"></div>
+<div id="zc"></div>
+<div class="zone" id="zr" aria-label="前のページ"></div>
+<div id="hint">左側タップ／右へスワイプで次のページ</div>
+<div id="bar">
+  <button id="first">最初</button>
+  <input id="seek" type="range" min="1" value="1">
+  <span id="num"></span>
+  <button id="mode">見開き</button>
+  <a id="pdf" href="manga.pdf" download>PDF</a>
+</div>
+<script>
+const TOTAL=99, pad=n=>String(n).padStart(3,'0'), src=n=>`pages/${pad(n)}.webp`;
+const stage=document.getElementById('stage'), seek=document.getElementById('seek'), num=document.getElementById('num'), bar=document.getElementById('bar'), modeBtn=document.getElementById('mode');
+seek.max=TOTAL;
+let page=1, spreadPref=null;
+try{const s=new URLSearchParams(location.hash.slice(1)).get('p');if(s)page=Math.min(TOTAL,Math.max(1,+s))}catch(e){}
+const wide=()=>spreadPref!==null?spreadPref:(innerWidth>innerHeight*1.1);
+// 見開き：表紙(1)は単独、以降 [2,3][4,5]…（右ページ=偶数）
+const group=p=>{if(!wide()||p===1)return[p];const a=p%2===0?p:p-1;return a+1<=TOTAL?[a,a+1]:[a]};
+const cache={};const pre=n=>{if(n>=1&&n<=TOTAL&&!cache[n]){cache[n]=new Image();cache[n].src=src(n)}};
+function render(){
+  const g=group(page);page=g[0];
+  stage.classList.toggle('spread',g.length>1);
+  stage.innerHTML=g.map(n=>`<img src="${src(n)}" alt="${n}ページ">`).join('');
+  seek.value=page;num.textContent=g.length>1?`${g[0]}-${g[1]} / ${TOTAL}`:`${page} / ${TOTAL}`;
+  modeBtn.textContent=wide()?'単ページ':'見開き';
+  history.replaceState(null,'','#p='+page);
+  const last=g[g.length-1];for(let i=1;i<=4;i++){pre(last+i);pre(page-i)}
+}
+const next=()=>{const g=group(page);const n=g[g.length-1]+1;if(n<=TOTAL){page=n;render()}};
+const prev=()=>{if(page<=1)return;page=group(page-1)[0];render()};
+document.getElementById('zl').onclick=next;
+document.getElementById('zr').onclick=prev;
+document.getElementById('zc').onclick=()=>bar.classList.toggle('hide');
+document.getElementById('first').onclick=()=>{page=1;render()};
+seek.oninput=()=>{page=+seek.value;render()};
+modeBtn.onclick=()=>{spreadPref=!wide();render()};
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key===' ')next();else if(e.key==='ArrowRight')prev()});
+let sx=null,sy=0;
+addEventListener('touchstart',e=>{if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY}else sx=null},{passive:true});
+addEventListener('touchend',e=>{if(sx===null||(visualViewport&&visualViewport.scale>1.05))return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){dx>0?next():prev()}sx=null},{passive:true});
+addEventListener('resize',render);
+setTimeout(()=>{document.getElementById('hint').style.opacity=0},3500);
+setTimeout(()=>bar.classList.add('hide'),3500);
+render();
+</script>
+</body>
+</html>
